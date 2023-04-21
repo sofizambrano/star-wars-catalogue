@@ -4,6 +4,7 @@ import { DetailedPerson, ListedPerson } from '../types';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchPeople } from '../api';
+import { displayFieldName, getFieldOptions, meetsFilter } from '../utils';
 
 type Field = keyof ListedPerson;
 
@@ -28,7 +29,6 @@ function PeopleList(): ReactElement {
   );
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchValue, setSearchValue] = useState<string>('');
-  // const [sortField, setSortField] = useState<Field>("name");
 
   const extendSearchParams = (param: Field, value: string) => {
     searchParams.set(param, value);
@@ -41,12 +41,10 @@ function PeopleList(): ReactElement {
     extendSearchParams('name', value);
   };
 
-  const onInputChange = (e: ChangeEvent<HTMLInputElement>, param: Field) => {
-    const value = e.target.value.toString();
-    extendSearchParams(param, value);
-  };
-
-  const onSelectChange = (e: ChangeEvent<HTMLSelectElement>, param: Field) => {
+  const onFilterChange = (
+    e: ChangeEvent<HTMLInputElement> | ChangeEvent<HTMLSelectElement>,
+    param: Field
+  ) => {
     const value = e.target.value.toString();
     extendSearchParams(param, value);
   };
@@ -59,37 +57,6 @@ function PeopleList(): ReactElement {
   useEffect(() => {
     setPeople(fetchPeople());
   }, []);
-
-  const getFieldOptions = (field: keyof ListedPerson): Array<string> => {
-    const removeSorroundingSpaces = (option: string) => option.trim();
-    return Array.from(
-      new Set(
-        people.flatMap((person) =>
-          person[field].split(',').map(removeSorroundingSpaces)
-        )
-      )
-    ).sort();
-  };
-
-  const meetsFilter = (
-    param: Field,
-    value: string,
-    person: DetailedPerson
-  ): boolean | undefined => {
-    if (
-      param === 'name' ||
-      param === 'hair_color' ||
-      param === 'skin_color' ||
-      param === 'eye_color'
-    ) {
-      return person[param]
-        ?.toString()
-        .toLowerCase()
-        .includes(value.toLowerCase());
-    } else {
-      return person[param] === value;
-    }
-  };
 
   useEffect(() => {
     setFilteredPeople(people);
@@ -118,7 +85,7 @@ function PeopleList(): ReactElement {
       <div className="filterForm">
         <fieldset>
           <legend className="fieldLabel capitalize">
-            {fieldName.split('_').join(' ')}
+            {displayFieldName(fieldName)}
           </legend>
           {fieldOptions.length >= 1 &&
             fieldOptions.map((option) => (
@@ -129,7 +96,7 @@ function PeopleList(): ReactElement {
                   name={fieldName}
                   value={option}
                   checked={searchParams.get(fieldName) === option}
-                  onChange={(e) => onInputChange(e, fieldName)}
+                  onChange={(e) => onFilterChange(e, fieldName)}
                 />
                 <label htmlFor={option} className="radioInputLabel">
                   {option}
@@ -145,13 +112,13 @@ function PeopleList(): ReactElement {
     return (
       <div className="filterForm">
         <label htmlFor={fieldName} className="fieldLabel capitalize">
-          {fieldName.split('_').join(' ')}
+          {displayFieldName(fieldName)}
         </label>
         <select
           name={fieldName}
           id={fieldName}
           value={searchParams.get(fieldName) ?? ''}
-          onChange={(e) => onSelectChange(e, fieldName)}
+          onChange={(e) => onFilterChange(e, fieldName)}
         >
           <option value="">--</option>
           {fieldOptions.length >= 1 &&
@@ -166,25 +133,11 @@ function PeopleList(): ReactElement {
   };
 
   const setFilterForm = (fieldName: Field) => {
-    const fieldOptions = getFieldOptions(fieldName);
+    const fieldOptions = getFieldOptions(people, fieldName);
     return fieldOptions.length > 10
       ? selectInputFilter(fieldName, fieldOptions)
       : radioInputFilter(fieldName, fieldOptions);
   };
-
-  // useEffect(() => {
-  //   setPeople(
-  //     people.sort((person1, person2) => {
-  //       if (person1[sortField] > person2[sortField]) {
-  //         return 1;
-  //       }
-  //       if (person1[sortField] < person2[sortField]) {
-  //         return -1;
-  //       }
-  //       return 0;
-  //     })
-  //   );
-  // }, [sortField, people]);
 
   return (
     <div className="page">
@@ -201,7 +154,7 @@ function PeopleList(): ReactElement {
           <div className="sectionHeader">
             <h5>Filters</h5>
             <button onClick={resetFilters} className="button">
-              Reset all
+              Clear all
             </button>
           </div>
           <div>
@@ -218,13 +171,9 @@ function PeopleList(): ReactElement {
         <table className="table peopleList">
           <tbody>
             <tr>
-              {filterFields.map((field) => (
-                <th
-                  className="capitalize"
-                  // onClick={() => setSortField(field)}
-                  key={field}
-                >
-                  {field.split('_').join(' ')}
+              {filterFields.map((fieldName) => (
+                <th className="capitalize" key={fieldName}>
+                  {displayFieldName(fieldName)}
                 </th>
               ))}
             </tr>

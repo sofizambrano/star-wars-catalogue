@@ -1,52 +1,22 @@
-import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { DetailedPerson, HomeworldMate } from '../types';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { DetailedPerson } from '../types';
 import { useEffect, useState } from 'react';
+import { displayFieldName, formatValue } from '../utils';
 
 export const PersonDetails = () => {
-  const [person, setPerson] = useState<DetailedPerson>();
-  const [people, setPeople] = useState<Array<DetailedPerson>>([]);
+  const navigate = useNavigate();
   const { state } = useLocation();
   const params = useParams();
 
+  const [person, setPerson] = useState<DetailedPerson>();
+  const [people, setPeople] = useState<Array<DetailedPerson>>([]);
+
   useEffect(() => {
     setPeople(state);
-    const { personId } = params;
-    setPerson(people.find((person) => person.id === personId));
+    setPerson(people.find((person) => person.id === params.personId));
   }, [params, state, people]);
-  const navigate = useNavigate();
 
   const noDisplayFields: Array<string> = ['url', 'id', 'name'];
-
-  const formatValue = (
-    field: string,
-    personField: string | Array<string> | Array<HomeworldMate>
-  ): string | JSX.Element => {
-    if (Array.isArray(personField)) {
-      if (personField.length === 0) return '-';
-      return personField[0].hasOwnProperty('name') ? (
-        <>
-          {personField.map((homeworldMate) => {
-            const { id, name } = homeworldMate as HomeworldMate;
-            return (
-              <Link
-                key={id}
-                to={`/people/${id}`}
-                state={people}
-                className="homeworldMateLink"
-              >
-                {name}
-              </Link>
-            );
-          })}
-        </>
-      ) : (
-        personField.join(', ')
-      );
-    }
-    if (field === 'created' || field === 'edited')
-      return new Date(personField).toLocaleString();
-    return personField;
-  };
 
   return (
     <div className="page">
@@ -64,16 +34,11 @@ export const PersonDetails = () => {
             <tbody>
               {Object.keys(person).map((field) => {
                 const personField = person[field as keyof DetailedPerson];
-                if (
-                  personField === undefined ||
-                  noDisplayFields.includes(field)
-                ) {
-                  return null;
-                }
-                return (
+                return personField === undefined ||
+                  noDisplayFields.includes(field) ? null : (
                   <tr key={field}>
-                    <td>{field.split('_').join(' ')}</td>
-                    <td>{formatValue(field, personField)}</td>
+                    <td>{displayFieldName(field)}</td>
+                    <td>{formatValue(field, personField, people)}</td>
                   </tr>
                 );
               })}
