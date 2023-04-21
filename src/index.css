@@ -9,6 +9,10 @@ body {
   padding: 25px;
 }
 
+.pageTitle {
+  margin: 0;
+}
+
 .searchBar {
   border: 1px solid gray;
   border-radius: 5px;
@@ -108,4 +112,24 @@ select {
 
 .homeworldMateLink {
   display: block;
+}
+
+.sortButton {
+  background-color: transparent;
+  border: none;
+  padding: 5px 10px;
+  margin: 0;
+  line-height: 1;
+  font-size: 15px;
+  color: white;
+  cursor: pointer;
+  transition: transform .05s ease-out;
+}
+
+.sortReverse {
+  transform: rotate(180deg);
+}
+
+.active {
+  color: black;
 }

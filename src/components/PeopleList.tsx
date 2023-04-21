@@ -1,12 +1,24 @@
-import { ChangeEvent, ReactElement, useEffect, useState } from 'react';
+import {
+  ChangeEvent,
+  ReactElement,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import PersonRow from './PersonRow';
-import { DetailedPerson, ListedPerson } from '../types';
+import { DetailedPerson, ListedPerson, SortOrder } from '../types';
 
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { fetchPeople } from '../api';
-import { displayFieldName, getFieldOptions, meetsFilter } from '../utils';
+import {
+  displayFieldName,
+  getFieldOptions,
+  meetsFilter,
+  sortPeople,
+} from '../utils';
+import { SortButton } from './SortButton';
 
-type Field = keyof ListedPerson;
+export type Field = keyof ListedPerson;
 
 export const filterFields: Array<Field> = [
   'name',
@@ -29,6 +41,19 @@ function PeopleList(): ReactElement {
   );
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchValue, setSearchValue] = useState<string>('');
+
+  const [sortField, setSortField] = useState<Field>('name');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+
+  const sortedPeople = useCallback(
+    () =>
+      sortPeople({
+        people: filteredPeople,
+        sortField,
+        reverse: sortOrder === 'desc',
+      }),
+    [filteredPeople, sortField, sortOrder]
+  );
 
   const extendSearchParams = (param: Field, value: string) => {
     searchParams.set(param, value);
@@ -139,9 +164,14 @@ function PeopleList(): ReactElement {
       : radioInputFilter(fieldName, fieldOptions);
   };
 
+  const changeSort = (fieldName: Field) => {
+    setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    setSortField(fieldName);
+  };
+
   return (
     <div className="page">
-      <h1>Star Wars catalogue</h1>
+      <h1 className="pageTitle">Star Wars catalogue</h1>
       <input
         type="search"
         className="searchBar"
@@ -174,11 +204,19 @@ function PeopleList(): ReactElement {
               {filterFields.map((fieldName) => (
                 <th className="capitalize" key={fieldName}>
                   {displayFieldName(fieldName)}
+                  <SortButton
+                    fieldName={fieldName}
+                    onClick={() => changeSort(fieldName)}
+                    {...{
+                      sortOrder,
+                      sortField,
+                    }}
+                  ></SortButton>
                 </th>
               ))}
             </tr>
-            {filteredPeople.length >= 1 ? (
-              filteredPeople.map((person) => (
+            {sortedPeople().length >= 1 ? (
+              sortedPeople().map((person) => (
                 <PersonRow
                   key={person.id}
                   person={person}
